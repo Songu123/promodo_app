@@ -19,7 +19,7 @@ on:
 jobs:
   build-ipa:
     name: Build Unsigned IPA for TrollStore 2
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - name: Checkout code
