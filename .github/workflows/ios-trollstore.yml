@@ -51,21 +51,22 @@ jobs:
         run: |
           cd ios
           WORKSPACE=$(ls -d *.xcworkspace | head -n 1)
-          
-          echo "Available schemes in workspace:"
-          xcodebuild -workspace "$WORKSPACE" -list
-          
-          # Automatically detect main scheme
-          SCHEME=$(xcodebuild -workspace "$WORKSPACE" -list -json | node -e "
-            const fs = require('fs');
-            const data = JSON.parse(fs.readFileSync(0, 'utf-8'));
-            const schemes = data.workspace?.schemes || [];
-            const target = schemes.find(s => !s.toLowerCase().includes('pods') && !s.toLowerCase().includes('tests')) || schemes[0];
-            console.log(target);
-          " | tail -n 1)
+          XCODEPROJ=$(ls -d *.xcodeproj | head -n 1)
+          APP_NAME=$(basename "$XCODEPROJ" .xcodeproj)
           
           echo "Using Workspace: $WORKSPACE"
-          echo "Using Scheme: $SCHEME"
+          echo "Using Project: $XCODEPROJ"
+          echo "App Name: $APP_NAME"
+          
+          # Detect main scheme from the main Xcode project (NOT from CocoaPods schemes)
+          SCHEME=$(xcodebuild -project "$XCODEPROJ" -list -json | node -e "
+            const fs = require('fs');
+            const data = JSON.parse(fs.readFileSync(0, 'utf-8'));
+            const schemes = data.project?.schemes || [];
+            console.log(schemes[0] || '$APP_NAME');
+          " | tail -n 1)
+          
+          echo "Resolved Main App Scheme: $SCHEME"
           
           CONFIG="${{ inputs.build_configuration }}"
           if [ -z "$CONFIG" ]; then
@@ -107,6 +108,8 @@ jobs:
 
           echo "Selected app bundle: $APP_PATH"
           if [ -z "$APP_PATH" ] || [ ! -d "$APP_PATH" ]; then
+            echo "Listing contents of RUNNER_TEMP for debugging:"
+            find "$RUNNER_TEMP" -maxdepth 4 || true
             echo "ERROR: Could not locate .app bundle anywhere in $RUNNER_TEMP!"
             exit 1
           fi
