@@ -39,6 +39,7 @@ export default function FocusScreen() {
       <Header
         title="Focus Pomodoro"
         subtitle={`Session ${completedSessions + 1} of 4 • iOS 15.8`}
+        showAppIcon={true}
       />
 
       <View style={styles.content}>
