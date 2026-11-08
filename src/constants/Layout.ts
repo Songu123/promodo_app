@@ -1,0 +1,35 @@
+import { Dimensions } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+
+/**
+ * Screen dimensions & iPhone 8 Plus constraints
+ * iPhone 8 Plus screen size: 414 x 736 pt
+ */
+export const Layout = {
+  window: {
+    width,
+    height,
+  },
+  isSmallDevice: width < 375,
+  isIPhone8Plus: width === 414 && height === 736,
+  
+  // Spacing system
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 16,
+    lg: 24,
+    xl: 32,
+    xxl: 40,
+  },
+
+  // Border radius
+  borderRadius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    full: 9999,
+  },
+};
