@@ -16,3 +16,4 @@ export const STORAGE_KEYS = {
   TIMER_STATE: '@focus_pomodoro:timer_state',
   ACTIVE_TASK_ID: '@focus_pomodoro:active_task_id',
 };
+

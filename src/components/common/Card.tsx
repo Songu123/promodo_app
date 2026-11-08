@@ -46,3 +46,4 @@ const styles = StyleSheet.create({
     borderColor: defaultColors.primary,
   },
 });
+

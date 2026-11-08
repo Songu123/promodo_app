@@ -14,6 +14,7 @@ on:
   push:
     branches:
       - main
+      - develop
 
 jobs:
   build-ipa:
@@ -97,3 +98,4 @@ jobs:
           name: FocusPomodoro-TrollStore-IPA
           path: ${{ runner.temp }}/FocusPomodoro-TrollStore.ipa
           retention-days: 14
+

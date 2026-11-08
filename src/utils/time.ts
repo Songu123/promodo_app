@@ -31,3 +31,4 @@ export function formatSecondsToHumanReadable(seconds: number): string {
   const mins = Math.round(seconds / 60);
   return formatDurationMinutes(mins);
 }
+

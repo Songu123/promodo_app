@@ -63,3 +63,4 @@ export interface ProductivitySummary {
   dailyFocusMinutes: { date: string; minutes: number }[];
   weeklyFocusMinutes: { week: string; minutes: number }[];
 }
+
