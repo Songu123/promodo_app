@@ -1,142 +1,272 @@
-import React, { useState } from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle } from 'react-native-svg';
 import { defaultColors } from '../../src/constants/Colors';
 import { Layout } from '../../src/constants/Layout';
 import { Header } from '../../src/components/common/Header';
 import { Card } from '../../src/components/common/Card';
 import { Button } from '../../src/components/common/Button';
 import { formatTime } from '../../src/utils/time';
-import { Play, Pause, RotateCcw, SkipForward, CheckCircle2, Sparkles } from 'lucide-react-native';
+import { usePomodoroTimer } from '../../src/hooks/usePomodoroTimer';
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  SkipForward,
+  CheckCircle2,
+  Coffee,
+  Flame,
+  Award,
+} from 'lucide-react-native';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const DIAL_SIZE = Math.min(SCREEN_WIDTH * 0.72, 270);
+const STROKE_WIDTH = 10;
+const RADIUS = (DIAL_SIZE - STROKE_WIDTH) / 2;
+const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 
 export default function FocusScreen() {
-  const [secondsRemaining, setSecondsRemaining] = useState(25 * 60);
-  const [isRunning, setIsRunning] = useState(false);
-  const [mode, setMode] = useState<'focus' | 'shortBreak' | 'longBreak'>('focus');
-  const [completedSessions, setCompletedSessions] = useState(0);
+  const {
+    mode,
+    status,
+    remainingSeconds,
+    progress,
+    completedSessions,
+    cycleSessionIndex,
+    toggle,
+    reset,
+    skip,
+    selectMode,
+  } = usePomodoroTimer({
+    onSessionComplete: (completedMode, count) => {
+      console.log(`Completed ${completedMode} session #${count}`);
+    },
+  });
 
-  const handleToggleTimer = () => {
-    setIsRunning(!isRunning);
+  const isRunning = status === 'running';
+
+  // Dynamic color depending on active mode
+  const getThemeColor = () => {
+    switch (mode) {
+      case 'focus':
+        return defaultColors.primary; // Cyan #38BDF8
+      case 'shortBreak':
+        return defaultColors.success; // Green #22C55E
+      case 'longBreak':
+        return defaultColors.warning; // Amber #F59E0B
+    }
   };
 
-  const handleReset = () => {
-    setIsRunning(false);
-    if (mode === 'focus') setSecondsRemaining(25 * 60);
-    else if (mode === 'shortBreak') setSecondsRemaining(5 * 60);
-    else setSecondsRemaining(15 * 60);
-  };
-
-  const handleSelectMode = (newMode: 'focus' | 'shortBreak' | 'longBreak') => {
-    setIsRunning(false);
-    setMode(newMode);
-    if (newMode === 'focus') setSecondsRemaining(25 * 60);
-    else if (newMode === 'shortBreak') setSecondsRemaining(5 * 60);
-    else setSecondsRemaining(15 * 60);
-  };
+  const themeColor = getThemeColor();
+  const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
       <Header
         title="Focus Pomodoro"
-        subtitle={`Session ${completedSessions + 1} of 4 • iOS 15.8`}
+        subtitle={`Session ${completedSessions + 1} • Cycle #${Math.floor(completedSessions / 4) + 1}`}
         showAppIcon={true}
       />
 
       <View style={styles.content}>
-        {/* Live Dev Badge showing the new App Icon */}
-        <View style={styles.iconShowcaseBanner}>
-          <Image
-            source={require('../../assets/images/icon.png')}
-            style={styles.showcaseIcon}
-          />
-          <View style={styles.showcaseTextContainer}>
-            <View style={styles.liveBadgeRow}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveBadgeText}>LIVE METRO CONNECTED</Text>
-            </View>
-            <Text style={styles.showcaseTitle}>New Sleek Neon Icon Active</Text>
-            <Text style={styles.showcaseSubtitle}>Shake device or press 'r' to reload bundle</Text>
-          </View>
-        </View>
-
-        {/* Mode Selector */}
+        {/* Mode Selector Tabs */}
         <View style={styles.modeContainer}>
-          <Button
-            title="Focus"
-            size="sm"
-            variant={mode === 'focus' ? 'primary' : 'ghost'}
-            onPress={() => handleSelectMode('focus')}
-            style={styles.modeButton}
-          />
-          <Button
-            title="Short Break"
-            size="sm"
-            variant={mode === 'shortBreak' ? 'primary' : 'ghost'}
-            onPress={() => handleSelectMode('shortBreak')}
-            style={styles.modeButton}
-          />
-          <Button
-            title="Long Break"
-            size="sm"
-            variant={mode === 'longBreak' ? 'primary' : 'ghost'}
-            onPress={() => handleSelectMode('longBreak')}
-            style={styles.modeButton}
-          />
+          <TouchableOpacity
+            style={[
+              styles.modeTab,
+              mode === 'focus' && [styles.activeTab, { borderColor: defaultColors.primary }],
+            ]}
+            onPress={() => selectMode('focus')}
+            activeOpacity={0.7}
+          >
+            <Flame
+              size={16}
+              color={mode === 'focus' ? defaultColors.primary : defaultColors.secondaryText}
+            />
+            <Text
+              style={[
+                styles.modeTabText,
+                mode === 'focus' && { color: defaultColors.primary, fontWeight: '700' },
+              ]}
+            >
+              Focus
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.modeTab,
+              mode === 'shortBreak' && [styles.activeTab, { borderColor: defaultColors.success }],
+            ]}
+            onPress={() => selectMode('shortBreak')}
+            activeOpacity={0.7}
+          >
+            <Coffee
+              size={16}
+              color={mode === 'shortBreak' ? defaultColors.success : defaultColors.secondaryText}
+            />
+            <Text
+              style={[
+                styles.modeTabText,
+                mode === 'shortBreak' && { color: defaultColors.success, fontWeight: '700' },
+              ]}
+            >
+              Short Break
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.modeTab,
+              mode === 'longBreak' && [styles.activeTab, { borderColor: defaultColors.warning }],
+            ]}
+            onPress={() => selectMode('longBreak')}
+            activeOpacity={0.7}
+          >
+            <Award
+              size={16}
+              color={mode === 'longBreak' ? defaultColors.warning : defaultColors.secondaryText}
+            />
+            <Text
+              style={[
+                styles.modeTabText,
+                mode === 'longBreak' && { color: defaultColors.warning, fontWeight: '700' },
+              ]}
+            >
+              Long Break
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Timer Display Card */}
-        <Card style={styles.timerCard}>
-          <View style={styles.timerCircle}>
-            <Text style={styles.timerDigits}>{formatTime(secondsRemaining)}</Text>
-            <Text style={styles.timerModeLabel}>
-              {mode === 'focus' ? 'STAY FOCUSED' : 'REST & RECHARGE'}
-            </Text>
+        {/* 4-Session Cycle Indicator Dots */}
+        <View style={styles.cycleProgressContainer}>
+          <Text style={styles.cycleLabel}>DAILY CYCLE</Text>
+          <View style={styles.dotsRow}>
+            {[0, 1, 2, 3].map((index) => {
+              const isDone = index < cycleSessionIndex;
+              const isCurrent = index === cycleSessionIndex;
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.cycleDot,
+                    isDone && { backgroundColor: defaultColors.primary, borderColor: defaultColors.primary },
+                    isCurrent && [
+                      styles.currentDot,
+                      { borderColor: themeColor, backgroundColor: isRunning ? themeColor : 'transparent' },
+                    ],
+                  ]}
+                />
+              );
+            })}
           </View>
-        </Card>
+        </View>
+
+        {/* Circular Countdown Dial */}
+        <View style={styles.dialContainer}>
+          <Svg width={DIAL_SIZE} height={DIAL_SIZE}>
+            {/* Background Track Circle */}
+            <Circle
+              stroke="#1E293B"
+              fill="none"
+              cx={DIAL_SIZE / 2}
+              cy={DIAL_SIZE / 2}
+              r={RADIUS}
+              strokeWidth={STROKE_WIDTH}
+            />
+            {/* Animated Progress Arc */}
+            <Circle
+              stroke={themeColor}
+              fill="none"
+              cx={DIAL_SIZE / 2}
+              cy={DIAL_SIZE / 2}
+              r={RADIUS}
+              strokeWidth={STROKE_WIDTH}
+              strokeDasharray={`${CIRCUMFERENCE} ${CIRCUMFERENCE}`}
+              strokeDashoffset={strokeDashoffset}
+              strokeLinecap="round"
+              rotation="-90"
+              origin={`${DIAL_SIZE / 2}, ${DIAL_SIZE / 2}`}
+            />
+          </Svg>
+
+          {/* Central Digits & Status */}
+          <View style={styles.dialInnerContent}>
+            <Text style={[styles.dialModeLabel, { color: themeColor }]}>
+              {mode === 'focus'
+                ? 'FOCUS TIME'
+                : mode === 'shortBreak'
+                ? 'SHORT BREAK'
+                : 'LONG BREAK'}
+            </Text>
+            <Text style={styles.timerDigits}>{formatTime(remainingSeconds)}</Text>
+            <View style={styles.statusPill}>
+              <View
+                style={[
+                  styles.statusDot,
+                  { backgroundColor: isRunning ? defaultColors.success : defaultColors.secondaryText },
+                ]}
+              />
+              <Text style={styles.statusPillText}>
+                {status === 'running'
+                  ? 'COUNTING DOWN'
+                  : status === 'paused'
+                  ? 'PAUSED'
+                  : 'READY'}
+              </Text>
+            </View>
+          </View>
+        </View>
 
         {/* Active Task Link */}
         <Card style={styles.taskCard} variant="secondary">
           <View style={styles.taskRow}>
-            <CheckCircle2 color={defaultColors.primary} size={20} />
+            <CheckCircle2 color={themeColor} size={20} />
             <View style={styles.taskTextContainer}>
-              <Text style={styles.taskHeading}>Current Focus</Text>
-              <Text style={styles.taskTitle}>Setup Project Foundation</Text>
+              <Text style={styles.taskHeading}>Active Task</Text>
+              <Text style={styles.taskTitle}>Build Pomodoro Countdown Engine</Text>
             </View>
           </View>
         </Card>
 
-        {/* Action Controls */}
+        {/* Primary Action Controls */}
         <View style={styles.controlsRow}>
           <Button
             title=""
             icon={<RotateCcw color={defaultColors.secondaryText} size={22} />}
             variant="secondary"
             size="lg"
-            onPress={handleReset}
+            onPress={reset}
             style={styles.circleButton}
           />
 
-          <Button
-            title={isRunning ? 'Pause' : 'Start Focus'}
-            icon={
-              isRunning ? (
-                <Pause color="#0F172A" size={22} />
-              ) : (
-                <Play color="#0F172A" size={22} />
-              )
-            }
-            variant="primary"
-            size="lg"
-            onPress={handleToggleTimer}
-            style={styles.mainActionButton}
-          />
+          <TouchableOpacity
+            style={[styles.mainActionButton, { backgroundColor: themeColor }]}
+            onPress={toggle}
+            activeOpacity={0.85}
+          >
+            {isRunning ? (
+              <>
+                <Pause color="#0F172A" size={24} />
+                <Text style={styles.mainActionText}>Pause</Text>
+              </>
+            ) : (
+              <>
+                <Play color="#0F172A" size={24} />
+                <Text style={styles.mainActionText}>
+                  {status === 'paused' ? 'Resume' : 'Start Focus'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
 
           <Button
             title=""
             icon={<SkipForward color={defaultColors.secondaryText} size={22} />}
             variant="secondary"
             size="lg"
-            onPress={handleReset}
+            onPress={skip}
             style={styles.circleButton}
           />
         </View>
@@ -156,100 +286,116 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: Layout.spacing.lg,
   },
-  iconShowcaseBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#162235',
-    borderWidth: 1,
-    borderColor: '#1E293B',
-    borderRadius: Layout.borderRadius.lg,
-    padding: Layout.spacing.sm + 2,
-    marginBottom: Layout.spacing.sm,
-  },
-  showcaseIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: defaultColors.primary,
-  },
-  showcaseTextContainer: {
-    marginLeft: Layout.spacing.md,
-    flex: 1,
-  },
-  liveBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: defaultColors.success,
-    marginRight: 6,
-  },
-  liveBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: defaultColors.primary,
-    letterSpacing: 1,
-  },
-  showcaseTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: defaultColors.text,
-    marginTop: 2,
-  },
-  showcaseSubtitle: {
-    fontSize: 11,
-    color: defaultColors.secondaryText,
-    marginTop: 1,
-  },
   modeContainer: {
     flexDirection: 'row',
-    backgroundColor: defaultColors.secondaryBackground,
-    borderRadius: Layout.borderRadius.md,
+    backgroundColor: '#162235',
+    borderRadius: Layout.borderRadius.lg,
     padding: 4,
-    justifyContent: 'space-between',
-  },
-  modeButton: {
-    flex: 1,
-    marginHorizontal: 2,
-  },
-  timerCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: Layout.spacing.xl,
-    borderRadius: Layout.borderRadius.xl,
-    backgroundColor: defaultColors.secondaryBackground,
     borderWidth: 1,
-    borderColor: defaultColors.border,
+    borderColor: '#1E293B',
   },
-  timerCircle: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
-    borderWidth: 6,
-    borderColor: defaultColors.primary,
+  modeTab: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: defaultColors.background,
+    paddingVertical: Layout.spacing.sm,
+    borderRadius: Layout.borderRadius.md,
+    marginHorizontal: 2,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  activeTab: {
+    backgroundColor: '#1B2638',
+  },
+  modeTabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: defaultColors.secondaryText,
+    marginLeft: 6,
+  },
+  cycleProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: Layout.spacing.xs,
+  },
+  cycleLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: defaultColors.secondaryText,
+    letterSpacing: 1,
+    marginRight: Layout.spacing.sm,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cycleDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#334155',
+    backgroundColor: 'transparent',
+    marginHorizontal: 4,
+  },
+  currentDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  dialContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: Layout.spacing.sm,
+    position: 'relative',
+    height: DIAL_SIZE,
+  },
+  dialInnerContent: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dialModeLabel: {
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 4,
   },
   timerDigits: {
-    fontSize: 54,
+    fontSize: 58,
     fontWeight: '800',
     color: defaultColors.text,
     letterSpacing: -1,
+    fontVariant: ['tabular-nums'],
   },
-  timerModeLabel: {
-    fontSize: 12,
+  statusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#162235',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: Layout.borderRadius.full,
+    borderWidth: 1,
+    borderColor: '#1E293B',
+    marginTop: 6,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  statusPillText: {
+    fontSize: 11,
     fontWeight: '700',
-    color: defaultColors.primary,
-    letterSpacing: 2,
-    marginTop: Layout.spacing.xs,
+    color: defaultColors.secondaryText,
+    letterSpacing: 0.5,
   },
   taskCard: {
-    marginVertical: Layout.spacing.sm,
+    marginVertical: Layout.spacing.xs,
   },
   taskRow: {
     flexDirection: 'row',
@@ -274,8 +420,8 @@ const styles = StyleSheet.create({
   controlsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-around',
-    marginTop: Layout.spacing.md,
+    justifyContent: 'space-between',
+    marginTop: Layout.spacing.sm,
   },
   circleButton: {
     width: 56,
@@ -283,11 +429,22 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     paddingHorizontal: 0,
     paddingVertical: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   mainActionButton: {
     flex: 1,
     marginHorizontal: Layout.spacing.md,
     height: 56,
     borderRadius: Layout.borderRadius.full,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mainActionText: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#0F172A',
+    marginLeft: 8,
   },
 });
